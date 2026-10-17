@@ -33,7 +33,7 @@
     color: var(--gold); letter-spacing: 2px; margin-bottom: 22px;
   }
 
-  /* 书架 */
+  /* ===== 电脑端书架默认排版 ===== */
   .shelves { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
   .shelf {
     flex: 1; min-width: 320px; max-width: 360px;
@@ -64,6 +64,33 @@
     gap: 6px; justify-items: center;
   }
 
+  /* ===== 手机端书架排版：四个并排 ===== */
+  @media (max-width: 768px) {
+    .shelves { gap: 6px; flex-wrap: nowrap; } /* 不换行，强行并排 */
+    .shelf { 
+      min-width: 0; /* 关键：取消电脑端的最小宽度限制 */
+      padding: 6px 4px; /* 缩小内边距 */
+      min-height: 200px;
+    }
+    .shelf h2 { 
+      font-size: 13px; letter-spacing: 2px; margin-bottom: 6px; padding-bottom: 6px; 
+    }
+    .shelf h2::after { left: 5%; right: 5%; }
+    .shelf .books { 
+      grid-template-columns: repeat(2, 1fr); /* 手机端每行放2本，不然太挤 */
+      gap: 4px; 
+    }
+    /* 手机端书本尺寸缩小 */
+    .book {
+      width: 40px; height: 50px; font-size: 9px;
+      padding: 4px 2px; border-left-width: 3px; letter-spacing: 1px;
+    }
+    .desk {
+      grid-template-columns: repeat(5, 46px); /* 书桌每行5本 */
+      gap: 4px; padding: 10px;
+    }
+  }
+
   /* 书桌 */
   .desk {
     margin: 26px auto 0;
@@ -82,7 +109,7 @@
     color: var(--gold); letter-spacing: 3px; margin-bottom: 8px;
   }
 
-  /* 古籍书本 */
+  /* 古籍书本（默认电脑端大小） */
   .book {
     width: 90px; height: 114px;
     background: url("images/shu.jpg") center/cover no-repeat;
@@ -181,9 +208,10 @@
       郎主寒毒痊愈后，偶有记忆恍惚之时。<br>
       江郎君便会带着郎主翻阅随便堂中书信，回忆往昔，唤其神思。<br>
       只是这两人都不喜收拾，书籍归档之事，便只有你来做了。<br>
-      待书卷全部归位，今日的活儿就算做完了。<br>
+      点书可观其文。拖拽可归其位。<br>
+      书卷全部归位，今日的活儿就算做完了。<br>
       <span style="font-size:12px;">（点击"上工"后会有BGM响起，右上角可调节音量）</span><br>
-      <span style="font-size:12px; color:#a83232;">（电脑端点书阅读，拖拽归位；手机端点书选中，点书架归位）</span><br>
+      <span style="font-size:12px;">（手机端长按选中，再点击书架即可）</span><br>
     </p>
     <button onclick="closeNotice()">上 工</button>
   </div>
@@ -271,7 +299,7 @@ const books = [
   { id:47, title:"市井闲话", quote:"眼观六路，耳听八方", desc:"安总管卖菜时听来的各种坊间传闻。<br>内容不知真假，但都很有趣。", category:"杂闻" },
   { id:48, title:"江湖通缉令", img:"images/jiangyan.jpg", desc:"一张昔年江郎君的通缉令。<br>不知道郎主留着干什么……", category:"特殊" },
   { id:49, title:"定帖", img:"images/jiaou.jpg", desc:"写着江郎君和郎主生辰八字的文帖。<br>诶诶，怎么这个也乱放？！", category:"特殊" },
-  { id:50, title:"宾客名单", img:"images/lidan.png", desc:"去年郎主和江郎君给少主和小少主过生辰时，准备的宾客名单。<br>当时来了好多很厉害的人……", category:"特殊" },
+  { id:50, title:"宾客名单", img:"images/lidan.jpg", desc:"去年郎主和江郎君给少主和小少主过生辰时，准备的宾客名单。<br>当时来了好多很厉害的人……", category:"特殊" },
   { id:51, title:"花令时序", quote:"以花寄情，以景托思。", desc:"一本讲插花雅趣的图本。郎主时常对着书摆弄盆栽。<br>每每江郎君想去帮忙，都会被郎主赶走。", category:"书籍" },
   { id:52, title:"解毒略方", img:"images/yao.png", desc:"压制寒毒的药方。<br>不过现在已经用不上了。", category:"特殊" },
   { id:53, title:"杭西赏游册 一", quote:"喜欢您来！", desc:"介绍杭州景点的手册。<br>这本是小少主的。", category:"杂闻" },
@@ -281,8 +309,6 @@ const books = [
 const desk = document.getElementById('desk');
 const modal = document.getElementById('modal');
 let selectedBook = null; 
-
-// 判断是否为触屏设备（手机/平板）
 const isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
 
 const shuffled = [...books].sort(() => Math.random() - 0.5);
@@ -295,26 +321,13 @@ shuffled.forEach(book => {
   el.dataset.id = book.id;
   el.dataset.category = book.category;
 
-  el.addEventListener('dragstart', e => {
-    e.dataTransfer.setData('text/plain', book.id);
-    el.classList.add('dragging');
-  });
-  el.addEventListener('dragend', () => el.classList.remove('dragging'));
-
-  // 电脑端：点一下直接看弹窗；手机端：点一下选中
-  el.addEventListener('click', (e) => {
-    if (!isTouchDevice) {
-      // 电脑端逻辑
-      if (el.draggable) openModal(book); // 没归位的书点一下弹窗
-      else openModal(book);              // 归位的书点一下也弹窗
-    } else {
-      // 手机端逻辑
-      if (!el.draggable) { 
-        // 已经归位的书，点一下直接看书
-        openModal(book); 
-        return; 
-      }
-      // 没归位的书，点一下是选中/取消选中
+  let touchTimer;
+  
+  // 手机端：长按触发选中
+  el.addEventListener('touchstart', (e) => {
+    if (!isTouchDevice) return;
+    touchTimer = setTimeout(() => {
+      if (!el.draggable) return; 
       if (selectedBook === el) {
         el.classList.remove('selected');
         selectedBook = null;
@@ -323,8 +336,30 @@ shuffled.forEach(book => {
         selectedBook = el;
         el.classList.add('selected');
       }
+    }, 300);
+  }, { passive: true });
+
+  el.addEventListener('touchend', (e) => clearTimeout(touchTimer));
+
+  // 电脑/手机端：点击打开弹窗（除非刚刚长按选中了）
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!isTouchDevice) {
+      openModal(book); // 电脑端点一下直接看
+      return;
+    }
+    // 手机端：如果处于选中状态，点击不弹窗（防冲突）；否则弹窗
+    if (!selectedBook || selectedBook !== el) {
+      openModal(book); 
     }
   });
+
+  el.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', book.id);
+    el.classList.add('dragging');
+    if (selectedBook) { selectedBook.classList.remove('selected'); selectedBook = null; }
+  });
+  el.addEventListener('dragend', () => el.classList.remove('dragging'));
 
   desk.appendChild(el);
 });
@@ -406,7 +441,6 @@ document.querySelectorAll('.shelf').forEach(shelf => {
     tryPlaceBook(bookEl, shelf);
   });
 
-  // 手机端点击书架归位
   shelf.addEventListener('click', () => {
     if (selectedBook) {
       tryPlaceBook(selectedBook, shelf);
