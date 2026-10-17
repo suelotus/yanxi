@@ -33,8 +33,21 @@
     color: var(--gold); letter-spacing: 2px; margin-bottom: 22px;
   }
 
-  /* ===== 电脑端书架默认排版 ===== */
-  .shelves { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+  /* ===== 书架默认（电脑端）排版 ===== */
+  .shelves-container {
+    width: 100%;
+    /* 电脑端不限制，让他自动居中换行 */
+    display: flex;
+    justify-content: center;
+  }
+
+  .shelves { 
+    display: flex; 
+    gap: 16px; 
+    justify-content: center; 
+    flex-wrap: wrap; 
+  }
+
   .shelf {
     flex: 1; min-width: 320px; max-width: 360px;
     background: 
@@ -64,30 +77,27 @@
     gap: 6px; justify-items: center;
   }
 
-  /* ===== 手机端书架排版：四个并排 ===== */
+  /* ===== 手机端书架滑动排版 ===== */
   @media (max-width: 768px) {
-    .shelves { gap: 6px; flex-wrap: nowrap; } /* 不换行，强行并排 */
-    .shelf { 
-      min-width: 0; /* 关键：取消电脑端的最小宽度限制 */
-      padding: 6px 4px; /* 缩小内边距 */
-      min-height: 200px;
+    .shelves-container {
+      /* 开启横向滚动，隐藏滚动条 */
+      overflow-x: auto;
+      justify-content: flex-start; 
+      padding-bottom: 10px; 
+      -webkit-overflow-scrolling: touch; /* 苹果手机顺滑滚动 */
     }
-    .shelf h2 { 
-      font-size: 13px; letter-spacing: 2px; margin-bottom: 6px; padding-bottom: 6px; 
+    .shelves-container::-webkit-scrollbar { display: none; } /* 隐藏滚动条 */
+
+    .shelves {
+      flex-wrap: nowrap; /* 绝不换行 */
+      justify-content: flex-start;
+      padding: 0 16px; /* 两边留点空隙 */
+      gap: 12px;
     }
-    .shelf h2::after { left: 5%; right: 5%; }
-    .shelf .books { 
-      grid-template-columns: repeat(2, 1fr); /* 手机端每行放2本，不然太挤 */
-      gap: 4px; 
-    }
-    /* 手机端书本尺寸缩小 */
-    .book {
-      width: 40px; height: 50px; font-size: 9px;
-      padding: 4px 2px; border-left-width: 3px; letter-spacing: 1px;
-    }
-    .desk {
-      grid-template-columns: repeat(5, 46px); /* 书桌每行5本 */
-      gap: 4px; padding: 10px;
+    .shelf {
+      flex: 0 0 280px; /* 手机端固定书架宽度为 280px，不再自适应 */
+      min-width: 280px;
+      max-width: 280px;
     }
   }
 
@@ -108,8 +118,16 @@
     grid-column: 1 / -1; width: 100%; text-align: center; font-size: 14px;
     color: var(--gold); letter-spacing: 3px; margin-bottom: 8px;
   }
+  
+  /* 手机端书桌自适应 */
+  @media (max-width: 768px) {
+    .desk {
+      grid-template-columns: repeat(4, 1fr); /* 手机端每行 4 本 */
+      padding: 12px 8px;
+    }
+  }
 
-  /* 古籍书本（默认电脑端大小） */
+  /* 古籍书本 */
   .book {
     width: 90px; height: 114px;
     background: url("images/shu.jpg") center/cover no-repeat;
@@ -132,6 +150,13 @@
   .book:hover { transform: translateY(-5px) rotate(-2deg); box-shadow: 4px 8px 18px rgba(0,0,0,.4); }
   .book:active { cursor: grabbing; }
   .book.dragging { opacity: .4; }
+
+  /* 手机端书本稍微变小一点，以适应固定 280px 宽度的书架 */
+  @media (max-width: 768px) {
+    .book {
+      width: 76px; height: 96px; font-size: 11px; padding: 8px 6px;
+    }
+  }
 
   /* 手机选中高亮 */
   .book.selected {
@@ -208,10 +233,9 @@
       郎主寒毒痊愈后，偶有记忆恍惚之时。<br>
       江郎君便会带着郎主翻阅随便堂中书信，回忆往昔，唤其神思。<br>
       只是这两人都不喜收拾，书籍归档之事，便只有你来做了。<br>
-      点书可观其文。拖拽可归其位。<br>
       书卷全部归位，今日的活儿就算做完了。<br>
       <span style="font-size:12px;">（点击"上工"后会有BGM响起，右上角可调节音量）</span><br>
-      <span style="font-size:12px;">（手机端长按选中，再点击书架即可）</span><br>
+      <span style="font-size:12px;">（手机端可左右滑动查看书架，长按选中，点击归位）</span><br>
     </p>
     <button onclick="closeNotice()">上 工</button>
   </div>
@@ -220,11 +244,14 @@
 <h1>书 架</h1>
 <p class="hint">点 书 观 其 文 · 拖 书 归 其 位</p>
 
-<div class="shelves">
-  <div class="shelf" data-category="书籍"><h2>书 籍</h2><div class="books"></div></div>
-  <div class="shelf" data-category="信笺"><h2>信 笺</h2><div class="books"></div></div>
-  <div class="shelf" data-category="杂闻"><h2>杂 闻</h2><div class="books"></div></div>
-  <div class="shelf" data-category="特殊"><h2>特 殊</h2><div class="books"></div></div>
+<!-- 增加了一个外壳，用于手机端的横向滑动 -->
+<div class="shelves-container">
+  <div class="shelves">
+    <div class="shelf" data-category="书籍"><h2>书 籍</h2><div class="books"></div></div>
+    <div class="shelf" data-category="信笺"><h2>信 笺</h2><div class="books"></div></div>
+    <div class="shelf" data-category="杂闻"><h2>杂 闻</h2><div class="books"></div></div>
+    <div class="shelf" data-category="特殊"><h2>特 殊</h2><div class="books"></div></div>
+  </div>
 </div>
 
 <div class="desk" id="desk">
@@ -267,15 +294,15 @@ const books = [
   { id:15, title:"回江晏书 （建隆年间）", quote:"江晏，我接到小孩了。", desc:"昔日郎主与江郎君的回信。<br>火漆上封着一片鸟羽。<br>不要私下翻阅为好……", category:"信笺" },
   { id:16, title:"与陈子奚书 （乾德年间）", quote:"不日即归。", desc:"昔日江郎君与郎主的通信。<br>信封非常薄，字迹潦草，归心似箭。<br>不要私下翻阅为好……", category:"信笺" },
   { id:17, title:"白香山诗集", quote:"今夜闻君琵琶语，如听仙乐耳暂明。", desc:"香山居士的诗集。<br>郎主做了很多批注，读不太懂，还是别看了……", category:"书籍" },
-  { id:18, title:"家宅飞蛾防治方略", quote:"蛾蠹不除，家宅不宁！", desc:"一本讲述如何在家宅中防治飞蛾的书。<br>封底有个模糊的鳞粉印，似乎有人拿此书拍过蛾子。", category:"书籍" },
+  { id:18, title:"家宅飞蛾防治 方略", quote:"蛾蠹不除，家宅不宁！", desc:"一本讲述如何在家宅中防治飞蛾的书。<br>封底有个模糊的鳞粉印，似乎有人拿此书拍过蛾子。", category:"书籍" },
   { id:19, title:"青溪武学笔记", quote:"医者，当顾惜己身。", desc:"记载着青溪武学的册子。<br>《青山执笔》那一半比《明川药典》更旧一些。", category:"书籍" },
   { id:20, title:"燕云地理志", quote:"上稽沿革，下录风物。", desc:"记录着燕云地区山川风土的地方志书。", category:"书籍" },
   { id:21, title:"无名刀法", quote:"江晏，喝酒去吗？", desc:"一本刀法武学。<br>看不懂，但郎主写了很多批注，郎主真厉害。", category:"书籍" },
   { id:22, title:"钱塘食单", quote:"需草鱼一尾，饿养二三日。", desc:"一本江南菜谱。<br>西湖醋鱼那一页折了角，还做了批注，看字迹是江郎君的。", category:"书籍" },
   { id:23, title:"木经", quote:"自梁以上为上分，地以上为中分，阶为下分。", desc:"都料匠喻皓所著的木工专书。<br>江郎君最近时常翻阅，就因为郎主叫他给自己打张躺椅……", category:"书籍" },
-  { id:24, title:"璎璎巧计酬恩义", quote:"月色如水，二人终出樊笼，自此……天高海阔。", desc:"一本坊间流行的武侠话本。<br>郎主看完后说自己喜欢侠女璎璎，江郎君气得那天夜里没吃饭。", category:"书籍" },
+  { id:24, title:"璎璎巧计酬 恩义", quote:"月色如水，二人终出樊笼，自此……天高海阔。", desc:"一本坊间流行的武侠话本。<br>郎主看完后说自己喜欢侠女璎璎，江郎君气得那天夜里没吃饭。", category:"书籍" },
   { id:25, title:"醉春风", quote:"女人，你引起了我的注意。", desc:"一本坊间流行的恋爱话本。<br>其中男主角的原型很明显是玉山君。<br>郎主怎么会有？江郎君不管吗？", category:"书籍" },
-  { id:26, title:"露水情深之冷面大侠别想逃", quote:"你以为你得到的是谁的爱！", desc:"一本武侠题材的恋爱话本。<br>郎主为什么会喜欢看这个？坊间早就不流行了。", category:"书籍" },
+  { id:26, title:"露水情深之 冷面大侠别想逃", quote:"你以为你得到的是谁的爱！", desc:"一本武侠题材的恋爱话本。<br>郎主为什么会喜欢看这个？坊间早就不流行了。", category:"书籍" },
   { id:27, title:"氿留断案集", quote:"神探燕拂云，抽丝剥茧，智断谜案！", desc:"一本不知是话本还是实录的探案集。<br>原本是小少主硬塞给少主的，结果被郎主截胡了。", category:"书籍" },
   { id:28, title:"回春堂四月收支", quote:"本月支取平衡。", desc:"安总管每月汇报给郎主的账册略记。<br>只是郎主很少翻看，现在都八月了，这本还是新的……", category:"杂闻" },
   { id:29, title:"俦游小札", quote:"命俦啸侣，北行而游。", desc:"郎主年少时和江郎君出游写下的游记。<br>读起来很有意思！", category:"杂闻" },
@@ -323,7 +350,7 @@ shuffled.forEach(book => {
 
   let touchTimer;
   
-  // 手机端：长按触发选中
+  // 手机端：长按 300 毫秒触发选中
   el.addEventListener('touchstart', (e) => {
     if (!isTouchDevice) return;
     touchTimer = setTimeout(() => {
@@ -339,16 +366,15 @@ shuffled.forEach(book => {
     }, 300);
   }, { passive: true });
 
-  el.addEventListener('touchend', (e) => clearTimeout(touchTimer));
+  el.addEventListener('touchend', () => clearTimeout(touchTimer));
 
-  // 电脑/手机端：点击打开弹窗（除非刚刚长按选中了）
+  // 电脑/手机端：点击打开弹窗（如果当前不是选中状态）
   el.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!isTouchDevice) {
-      openModal(book); // 电脑端点一下直接看
+      openModal(book);
       return;
     }
-    // 手机端：如果处于选中状态，点击不弹窗（防冲突）；否则弹窗
     if (!selectedBook || selectedBook !== el) {
       openModal(book); 
     }
